@@ -1,12 +1,12 @@
 import { knex } from "knex";
 import dotenv from "dotenv";
+
 dotenv.config();
-export const db = knex({
-  client: "pg",
-  connection: {
-    connectionString: process.env.DB_CONNECTION_URI,
-    ssl: {
-      rejectUnauthorized: false,
-    },
-  },
-});
+
+const environment = process.env.NODE_ENV || "development";
+
+// Import the knex configuration
+const knexConfig = require("./knexfile.js");
+const config = knexConfig[environment];
+
+export const db = knex(config);
