@@ -5,7 +5,7 @@
     "scripts": {
         "build": "cd server && npm install && npm run build",
         "start": "cd server && npm run start:prod",
-        "postinstall": "cd server && npm install"
+        "postinstall": "if [ -d \"server\" ]; then cd server && npm install; fi"
     },
     "engines": {
         "node": ">=16.0.0"

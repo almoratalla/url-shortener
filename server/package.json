@@ -5,9 +5,9 @@
     "main": "index.js",
     "scripts": {
         "start": "nodemon",
+        "prestart:prod": "chmod +x ./diagnose.sh && ./diagnose.sh",
         "start:prod": "node dist/rest-api.js",
-        "build": "tsc",
-        "postinstall": "npm run build && npm run migrate:prod",
+        "build": "tsc && npm run migrate:prod",
         "migrate:prod": "knex --knexfile ./dist/db/knexfile.js --client pg migrate:latest",
         "test": "jest --forceExit --maxWorkers=1",
         "test:watch": "jest --watch",
