@@ -24,4 +24,13 @@ module.exports = {
       directory: path.join(__dirname, "./migrations"),
     },
   },
+  production: {
+    client: "postgres",
+    connection: {
+      connectionString: process.env.DATABASE_URL,
+    },
+    migrations: {
+      directory: path.join(__dirname, "./migrations"),
+    },
+  },
 };

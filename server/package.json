@@ -7,7 +7,7 @@
         "start": "nodemon",
         "prestart:prod": "chmod +x ./diagnose.sh && ./diagnose.sh",
         "start:prod": "node dist/rest-api.js",
-        "build": "tsc && npm run migrate:prod",
+        "build": "chmod +x ./render-build.sh && ./render-build.sh",
         "migrate:prod": "knex --knexfile ./dist/db/knexfile.js --client pg migrate:latest",
         "test": "jest --forceExit --maxWorkers=1",
         "test:watch": "jest --watch",
