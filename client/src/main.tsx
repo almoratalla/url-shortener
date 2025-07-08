@@ -6,6 +6,8 @@ import HomePage from "./pages/page";
 import RedirectPage from "./pages/RedirectPage";
 import CacheStatsPage from "./pages/CacheStatsPage";
 import { Toaster } from "./components/ui/sonner";
+// Import build info for debugging purposes
+import "./buildInfo";
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>

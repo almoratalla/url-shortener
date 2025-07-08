@@ -1,5 +1,4 @@
 [build]
-  base = "client"
   publish = "dist"
   command = "npm run build"
 
@@ -10,3 +9,4 @@
   from = "/*"
   to = "/index.html"
   status = 200
+  force = true
