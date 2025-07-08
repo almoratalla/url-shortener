@@ -1,6 +1,7 @@
 [build]
   publish = "dist"
-  command = "npm run build"
+  command = "npm install && npm run build:production"
+  # This matches what's in the Netlify UI
 
 [build.environment]
   NODE_VERSION = "18"

@@ -6,11 +6,13 @@
     "scripts": {
         "dev": "vite",
         "build": "tsc -b && vite build",
-        "build:production": "tsc -b && vite build --mode production",
+        "build:production": "node netlify-prebuild.js && tsc -p tsconfig.netlify.json && vite build --mode production",
+        "build:netlify": "tsc -p tsconfig.netlify.json && vite build",
         "lint": "eslint .",
         "preview": "vite preview",
         "start": "vite preview --port 80 --host",
-        "deploy": "npm run build:production"
+        "deploy": "npm run build:production",
+        "deploy:netlify": "node netlify-prebuild.js && npm run build:production"
     },
     "dependencies": {
         "@radix-ui/react-label": "^2.1.7",

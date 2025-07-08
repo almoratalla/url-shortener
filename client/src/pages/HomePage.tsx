@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 import reactLogo from "../assets/react.svg";
 
 function HomePage() {

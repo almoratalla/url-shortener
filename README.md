@@ -10,8 +10,8 @@ A modern, full-stack URL shortener application built with **React + Vite**, **Ex
 
 ## 🌐 Deployed Application
 
-- **Backend API**: [https://url-shortener-0jr9.onrender.com](https://url-shortener-0jr9.onrender.com)
-- **Frontend**: (Deploy to Netlify using the instructions in [DEPLOYMENT.md](./DEPLOYMENT.md))
+-   **Backend API**: [https://url-shortener-0jr9.onrender.com](https://url-shortener-0jr9.onrender.com)
+-   **Frontend**: (Deploy to Netlify using the instructions in [DEPLOYMENT.md](./DEPLOYMENT.md))
 
 See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions using Render and Netlify.
 
