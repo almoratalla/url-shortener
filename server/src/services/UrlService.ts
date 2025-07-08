@@ -14,6 +14,13 @@ import {
     validateUtmParams,
     isUrlExpired,
 } from "../utils/validators";
+import {
+    urlCache,
+    analyticsCache,
+    redirectCache,
+    CachedUrl,
+    CachedAnalytics,
+} from "./CacheService";
 
 export interface CreateUrlParams {
     originalUrl: string;
@@ -95,6 +102,14 @@ export class UrlService {
 
         const [createdUrl] = await db("urls").insert(urlData).returning("*");
 
+        // Cache the new URL (async, but don't wait)
+        urlCache.set(createdUrl.short_code, createdUrl).catch(console.error);
+        if (createdUrl.custom_slug) {
+            urlCache
+                .set(createdUrl.custom_slug, createdUrl)
+                .catch(console.error);
+        }
+
         return createdUrl;
     }
 
@@ -102,10 +117,25 @@ export class UrlService {
      * Retrieves a URL by short code or custom slug
      */
     static async getUrlByCode(code: string): Promise<UrlRecord | null> {
+        // Check cache first
+        const cachedUrl = await urlCache.get(code);
+        if (cachedUrl) {
+            return cachedUrl;
+        }
+
         const url = await db("urls")
             .where("short_code", code)
             .orWhere("custom_slug", code)
             .first();
+
+        if (url) {
+            // Cache by short code
+            urlCache.set(url.short_code, url).catch(console.error);
+            // Also cache by custom slug if it exists
+            if (url.custom_slug) {
+                urlCache.set(url.custom_slug, url).catch(console.error);
+            }
+        }
 
         return url || null;
     }
@@ -164,6 +194,36 @@ export class UrlService {
             referer?: string;
         }
     ): Promise<{ redirectUrl: string; expired: boolean }> {
+        // Check redirect cache first for performance
+        const cachedRedirect = await redirectCache.get(code);
+        if (cachedRedirect) {
+            // Still need to track analytics and update click count
+            const url = await this.getUrlByCode(code);
+            if (url) {
+                // Update click count and last accessed (async, don't wait)
+                db("urls")
+                    .where("id", url.id)
+                    .update({
+                        click_count: db.raw("click_count + 1"),
+                        last_accessed: new Date(),
+                    })
+                    .catch(console.error);
+
+                // Track analytics (async, don't wait)
+                if (
+                    analyticsData.ip_address ||
+                    analyticsData.user_agent ||
+                    analyticsData.referer
+                ) {
+                    this.trackAnalytics(url.id, analyticsData).catch(
+                        console.error
+                    );
+                }
+            }
+
+            return { redirectUrl: cachedRedirect, expired: false };
+        }
+
         const url = await this.getUrlByCode(code);
 
         if (!url) {
@@ -192,6 +252,9 @@ export class UrlService {
             redirectUrl = buildUtmUrl(url.original_url, utmParams);
         }
 
+        // Cache the redirect URL for future requests
+        redirectCache.set(code, redirectUrl).catch(console.error);
+
         // Update click count and last accessed
         await db("urls")
             .where("id", url.id)
@@ -199,6 +262,9 @@ export class UrlService {
                 click_count: db.raw("click_count + 1"),
                 last_accessed: new Date(),
             });
+
+        // Invalidate analytics cache for this URL since we're updating stats
+        analyticsCache.delete(url.id).catch(console.error);
 
         // Track analytics (optional - only if analytics data provided)
         if (
@@ -217,6 +283,21 @@ export class UrlService {
      */
     static async deleteUrl(id: string): Promise<boolean> {
         const deletedRows = await db("urls").where("id", id).del();
+
+        if (deletedRows > 0) {
+            // Invalidate caches for the deleted URL
+            const url = await db("urls").where("id", id).first();
+            if (url) {
+                urlCache.delete(url.short_code).catch(console.error);
+                if (url.custom_slug) {
+                    urlCache.delete(url.custom_slug).catch(console.error);
+                    redirectCache.delete(url.custom_slug).catch(console.error);
+                }
+                redirectCache.delete(url.short_code).catch(console.error);
+                analyticsCache.delete(id).catch(console.error);
+            }
+        }
+
         return deletedRows > 0;
     }
 
@@ -235,6 +316,12 @@ export class UrlService {
         const url = await this.getUrlById(urlId);
         if (!url) {
             throw new Error("URL not found");
+        }
+
+        // Check cache for analytics data
+        const cachedAnalytics = await analyticsCache.get(urlId);
+        if (cachedAnalytics) {
+            return cachedAnalytics;
         }
 
         // Get analytics data
@@ -259,26 +346,39 @@ export class UrlService {
             .groupBy(db.raw("DATE(clicked_at)"))
             .orderBy("date", "desc");
 
-        return {
-            url,
-            analytics,
-            summary: {
-                totalClicks: url.click_count,
-                uniqueClicks,
-                clicksByDay,
-            },
+        const summary = {
+            totalClicks: url.click_count,
+            uniqueClicks,
+            clicksByDay,
         };
+
+        const result = { url, analytics, summary };
+
+        // Cache the analytics data
+        analyticsCache.set(urlId, result).catch(console.error);
+
+        return result;
     }
 
     /**
      * Private helper methods
      */
     private static async checkShortCodeExists(code: string): Promise<boolean> {
+        // Check cache first
+        if (await urlCache.has(code)) {
+            return true;
+        }
+
         const existing = await db("urls").where("short_code", code).first();
         return !!existing;
     }
 
     private static async checkSlugExists(slug: string): Promise<boolean> {
+        // Check cache first
+        if (await urlCache.has(slug)) {
+            return true;
+        }
+
         const existing = await db("urls").where("custom_slug", slug).first();
         return !!existing;
     }

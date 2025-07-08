@@ -4,15 +4,25 @@ import cors from "cors";
 import routes from "./routes";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { requestLogger, rateLimiter } from "./middleware";
+import {
+    warmUrlCache,
+    startCacheCleanup,
+    createCacheMiddleware,
+    urlCache,
+    analyticsCache,
+    redirectCache,
+} from "./services/CacheService";
+import { db } from "./db/knex";
+
 dotenv.config();
 
 const app = express();
-import { db } from "./db/knex";
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(requestLogger);
+app.use(createCacheMiddleware()); // Performance monitoring
 app.use(rateLimiter()); // Rate limiting
 
 /*
@@ -53,7 +63,45 @@ app.use(routes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 8000;
-app.listen(PORT, () => {
-    console.log(`server has started on port ${PORT}`);
+// Cache status endpoint for monitoring
+app.get("/api/cache-stats", (_req, res) => {
+    res.json({
+        url: urlCache.getStats(),
+        analytics: analyticsCache.getStats(),
+        redirects: redirectCache.getStats(),
+        sizes: {
+            url: urlCache.size(),
+            analytics: analyticsCache.size(),
+            redirects: redirectCache.size(),
+        },
+    });
 });
+
+const PORT = process.env.PORT || 8000;
+
+// Initialize caching and start server
+async function startServer() {
+    try {
+        console.log("🚀 Starting URL shortener server...");
+
+        // Start cache cleanup process
+        startCacheCleanup();
+        console.log("✅ Cache cleanup process started");
+
+        // Warm up cache with popular URLs
+        await warmUrlCache(db);
+        console.log("✅ Cache warmed up successfully");
+
+        app.listen(PORT, () => {
+            console.log(`✅ Server has started on port ${PORT}`);
+            console.log(
+                `📊 Cache stats endpoint: http://localhost:${PORT}/api/cache-stats`
+            );
+        });
+    } catch (error) {
+        console.error("❌ Failed to start server:", error);
+        process.exit(1);
+    }
+}
+
+startServer();
