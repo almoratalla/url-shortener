@@ -1,6 +1,7 @@
 # Update these variables
 BACKEND_NAME="url-shortener-api"
 DATABASE_NAME="url-shortener-db"
+BACKEND_URL="https://url-shortener-0jr9.onrender.com"
 FRONTEND_REPO="https://github.com/yourusername/url-shortener"
 
 # Colors for terminal output
@@ -38,11 +39,16 @@ echo ""
 
 # Check Render services
 echo -e "${YELLOW}Checking Render services...${NC}"
-curl -s "https://api.render.com/v1/services?name=$BACKEND_NAME" > /dev/null
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✓ Backend service ($BACKEND_NAME) is accessible${NC}"
+
+# Test direct connection to backend URL
+echo -e "${YELLOW}Testing connection to backend at $BACKEND_URL...${NC}"
+BACKEND_RESPONSE=$(curl -s $BACKEND_URL/)
+if [[ $BACKEND_RESPONSE == *"hello"* ]]; then
+    echo -e "${GREEN}✓ Backend service at $BACKEND_URL is responding correctly${NC}"
+    echo -e "${BLUE}Response: $BACKEND_RESPONSE${NC}"
 else
-    echo -e "${RED}✗ Backend service not found or not accessible${NC}"
+    echo -e "${RED}✗ Backend service not responding as expected${NC}"
+    echo -e "${RED}Response: $BACKEND_RESPONSE${NC}"
 fi
 
 curl -s "https://api.render.com/v1/services?name=$DATABASE_NAME" > /dev/null

@@ -8,6 +8,13 @@
 
 A modern, full-stack URL shortener application built with **React + Vite**, **Express.js**, and **PostgreSQL**. Features intelligent caching with Redis, comprehensive analytics, and a beautiful UI built with shadcn/ui components.
 
+## 🌐 Deployed Application
+
+- **Backend API**: [https://url-shortener-0jr9.onrender.com](https://url-shortener-0jr9.onrender.com)
+- **Frontend**: (Deploy to Netlify using the instructions in [DEPLOYMENT.md](./DEPLOYMENT.md))
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions using Render and Netlify.
+
 ## ✨ Features
 
 ### 🚀 Core Functionality

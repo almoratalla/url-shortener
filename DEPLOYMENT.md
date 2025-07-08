@@ -84,12 +84,14 @@ This guide will help you deploy the URL Shortener application using Render for t
 3. Connect to GitHub and select your repository
 4. Configure the build settings:
     - **Base directory**: client
-    - **Build command**: npm run build
+    - **Build command**: npm run deploy
     - **Publish directory**: client/dist
 5. Add environment variables:
-    - `VITE_API_URL`: (Your Render backend URL from step 2.2)
+    - `VITE_API_URL`: https://url-shortener-0jr9.onrender.com (your actual backend URL)
 6. Click "Deploy site"
 7. Once deployed, you can set up a custom domain if desired
+
+> **Note**: A `netlify.toml` configuration file has been added to the client directory to simplify the deployment process. This includes build settings and redirects for the SPA.
 
 ## Step 4: Set Up Continuous Deployment
 
