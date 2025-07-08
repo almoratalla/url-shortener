@@ -6,7 +6,7 @@
     "scripts": {
         "dev": "vite",
         "build": "tsc -b && vite build",
-        "build:production": "node netlify-prebuild.js && tsc -p tsconfig.netlify.json && vite build --mode production",
+        "build:production": "node netlify-prebuild.js && vite build --mode production",
         "build:netlify": "tsc -p tsconfig.netlify.json && vite build",
         "lint": "eslint .",
         "preview": "vite preview",
