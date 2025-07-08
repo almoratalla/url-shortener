@@ -58,12 +58,16 @@ This guide will help you deploy the URL Shortener application using Render for t
     - **Plan**: Free ($0/month)
 
 4. Add environment variables:
+
     - `NODE_ENV`: production
     - `PORT`: 10000 (Render uses this port internally)
     - `DATABASE_URL`: (Copy the Internal Database URL from step 2.1)
-    - `BASE_URL`: (Will be your Render service URL, can add later)
+    - `BASE_URL`: (Your Render service URL, e.g., https://url-shortener-0jr9.onrender.com)
     - `UPSTASH_REDIS_REST_URL`: (Your Upstash Redis REST URL)
     - `UPSTASH_REDIS_REST_TOKEN`: (Your Upstash Redis REST Token)
+
+    > **Important**: If you're using your own domain or a different frontend URL, you'll need to update the CORS settings in `server/src/rest-api.ts` to include your domain.
+
 5. Click "Create Web Service"
 6. After deployment, note the service URL (e.g., `https://url-shortener-api.onrender.com`)
 

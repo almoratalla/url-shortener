@@ -20,7 +20,20 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(
+    cors({
+        origin: [
+            "http://localhost:3000",
+            "http://localhost:4173",
+            "https://url-shortener-0jr9.onrender.com",
+            "https://url-shortener-almoratalla.netlify.app", // Add your Netlify domain here
+            // Add any other domains that should be allowed to access the API
+        ],
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        credentials: true,
+        allowedHeaders: ["Content-Type", "Authorization"],
+    })
+);
 app.use(express.json());
 app.use(requestLogger);
 app.use(createCacheMiddleware()); // Performance monitoring
