@@ -431,6 +431,39 @@ docker system prune -a
 docker-compose -f docker-compose.minimal.yml build --no-cache
 ```
 
+### CORS Issues
+
+If you encounter CORS errors when your frontend tries to access the backend API:
+
+1. **Check CORS configuration** in `server/src/rest-api.ts`:
+
+    ```typescript
+    app.use(
+        cors({
+            origin: [
+                "http://localhost:3000",
+                "http://localhost:4173",
+                "https://url-shortener-0jr9.onrender.com",
+                "https://your-netlify-domain.netlify.app", // Make sure this matches your actual deployed domain
+            ],
+            // other CORS options...
+        })
+    );
+    ```
+
+2. **Use the test script** to verify your CORS setup:
+
+    ```bash
+    ./test-cors.sh
+    ```
+
+3. **Common deployment issues**:
+    - Ensure your Netlify domain is in the allowed origins
+    - Verify the backend has been redeployed after CORS changes
+    - Check that `VITE_API_URL` points to the correct backend URL
+
+### Docker Issues
+
 ## 📞 Support
 
 For questions or issues:

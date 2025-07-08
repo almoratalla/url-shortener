@@ -236,3 +236,30 @@ After following this guide, you'll have:
 -   ✅ Monitoring and logging
 
 Your URL shortener will be live and automatically update whenever you push changes to your main branch!
+
+## Troubleshooting
+
+### CORS Issues
+
+If you encounter CORS errors when your Netlify frontend tries to access your Render backend:
+
+1. **Check your CORS configuration** in `server/src/rest-api.ts`:
+
+    - Make sure your Netlify domain is explicitly listed in the `origin` array
+    - The Netlify domain should match exactly (e.g., `https://url-shortener-alm.netlify.app`)
+
+2. **Test CORS configuration** with the provided script:
+
+    ```bash
+    ./test-cors.sh
+    ```
+
+3. **Common fixes**:
+
+    - Double-check that the Netlify domain in your CORS config matches the actual deployed domain
+    - Make sure you've redeployed your backend after updating the CORS configuration
+    - Verify that the `VITE_API_URL` environment variable is set correctly in Netlify
+
+4. **Verify in browser dev tools**:
+    - Look for the `Access-Control-Allow-Origin` header in the OPTIONS preflight response
+    - Ensure your Netlify domain is explicitly returned in this header
