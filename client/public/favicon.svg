@@ -1,5 +1,6 @@
 <!-- Simple favicon SVG with link icon -->
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="32" height="32" rx="6" fill="#3b82f6"/>
-  <path d="M10 15H22M10 15L7 12M10 15L7 18M22 15L25 12M22 15L25 18" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect width="32" height="32" rx="6" fill="#3b82f6" />
+    <path d="M10 15H22M10 15L7 12M10 15L7 18M22 15L25 12M22 15L25 18" stroke="white" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" />
 </svg>

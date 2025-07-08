@@ -57,14 +57,14 @@ export default function RedirectPage() {
 
                 if (result.success && result.data) {
                     const redirectUrl = result.data.redirectUrl;
-                    
+
                     // Validate that redirectUrl is a string
-                    if (!redirectUrl || typeof redirectUrl !== 'string') {
+                    if (!redirectUrl || typeof redirectUrl !== "string") {
                         setError("Received invalid redirect URL from server");
                         setLoading(false);
                         return;
                     }
-                    
+
                     // Redirect to the destination URL
                     window.location.href = redirectUrl;
                     return;

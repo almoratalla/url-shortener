@@ -11,27 +11,30 @@ A modern, full-stack URL shortener application built with **React + Vite**, **Ex
 ## ✨ Features
 
 ### 🚀 Core Functionality
-- **URL Shortening**: Generate short, memorable URLs for any link
-- **Custom Slugs**: Create personalized short URLs with custom slugs
-- **Expiration Dates**: Set automatic expiration for temporary links
-- **UTM Parameter Support**: Advanced UTM parameter management for marketing campaigns
-- **Click Tracking**: Real-time analytics and click counting
+
+-   **URL Shortening**: Generate short, memorable URLs for any link
+-   **Custom Slugs**: Create personalized short URLs with custom slugs
+-   **Expiration Dates**: Set automatic expiration for temporary links
+-   **UTM Parameter Support**: Advanced UTM parameter management for marketing campaigns
+-   **Click Tracking**: Real-time analytics and click counting
 
 ### 🔥 Advanced Features
-- **Intelligent Multi-Layer Caching**: Redis + in-memory fallback with cache warming
-- **Real-time Analytics**: Comprehensive click tracking and user analytics
-- **Cache Statistics Dashboard**: Monitor cache performance and hit rates
-- **Responsive Design**: Beautiful, modern UI that works on all devices
-- **Toast Notifications**: User-friendly feedback with Sonner toasts
-- **Error Handling**: Robust error handling with meaningful messages
+
+-   **Intelligent Multi-Layer Caching**: Redis + in-memory fallback with cache warming
+-   **Real-time Analytics**: Comprehensive click tracking and user analytics
+-   **Cache Statistics Dashboard**: Monitor cache performance and hit rates
+-   **Responsive Design**: Beautiful, modern UI that works on all devices
+-   **Toast Notifications**: User-friendly feedback with Sonner toasts
+-   **Error Handling**: Robust error handling with meaningful messages
 
 ### 🛠 Technical Features
-- **Client-Side Routing**: React Router for seamless navigation
-- **Type Safety**: Full TypeScript implementation
-- **Database Migrations**: Automated schema management with Knex.js
-- **Docker Support**: Complete containerization for easy deployment
-- **Environment Configuration**: Flexible configuration for different environments
-- **Rate Limiting**: Built-in protection against abuse
+
+-   **Client-Side Routing**: React Router for seamless navigation
+-   **Type Safety**: Full TypeScript implementation
+-   **Database Migrations**: Automated schema management with Knex.js
+-   **Docker Support**: Complete containerization for easy deployment
+-   **Environment Configuration**: Flexible configuration for different environments
+-   **Rate Limiting**: Built-in protection against abuse
 
 ## 🚀 Quick Start
 
@@ -78,33 +81,36 @@ A modern, full-stack URL shortener application built with **React + Vite**, **Ex
 ## 🏗️ Architecture & Technology Stack
 
 ### Frontend
-| Technology | Purpose | Features |
-|------------|---------|----------|
-| **React 18** | UI Framework | Hooks, Suspense, Error Boundaries |
-| **Vite** | Build Tool | Fast HMR, optimized builds |
-| **TypeScript** | Type Safety | Full type coverage, better DX |
-| **Tailwind CSS** | Styling | Utility-first, responsive design |
-| **shadcn/ui** | UI Components | Beautiful, accessible components |
-| **React Router** | Routing | Client-side navigation |
-| **Sonner** | Notifications | Toast notifications |
+
+| Technology       | Purpose       | Features                          |
+| ---------------- | ------------- | --------------------------------- |
+| **React 18**     | UI Framework  | Hooks, Suspense, Error Boundaries |
+| **Vite**         | Build Tool    | Fast HMR, optimized builds        |
+| **TypeScript**   | Type Safety   | Full type coverage, better DX     |
+| **Tailwind CSS** | Styling       | Utility-first, responsive design  |
+| **shadcn/ui**    | UI Components | Beautiful, accessible components  |
+| **React Router** | Routing       | Client-side navigation            |
+| **Sonner**       | Notifications | Toast notifications               |
 
 ### Backend
-| Technology | Purpose | Features |
-|------------|---------|----------|
-| **Express.js** | Web Framework | RESTful APIs, middleware |
-| **TypeScript** | Type Safety | Type-safe server development |
-| **Knex.js** | Query Builder | SQL query builder, migrations |
-| **PostgreSQL 16** | Database | Reliable data persistence |
-| **Redis** | Caching | Multi-layer intelligent caching |
-| **Docker** | Containerization | Easy deployment and scaling |
+
+| Technology        | Purpose          | Features                        |
+| ----------------- | ---------------- | ------------------------------- |
+| **Express.js**    | Web Framework    | RESTful APIs, middleware        |
+| **TypeScript**    | Type Safety      | Type-safe server development    |
+| **Knex.js**       | Query Builder    | SQL query builder, migrations   |
+| **PostgreSQL 16** | Database         | Reliable data persistence       |
+| **Redis**         | Caching          | Multi-layer intelligent caching |
+| **Docker**        | Containerization | Easy deployment and scaling     |
 
 ### DevOps & Tools
-| Technology | Purpose |
-|------------|---------|
+
+| Technology         | Purpose           |
+| ------------------ | ----------------- |
 | **Docker Compose** | Local development |
-| **ESLint** | Code linting |
-| **Prettier** | Code formatting |
-| **Jest** | Testing framework |
+| **ESLint**         | Code linting      |
+| **Prettier**       | Code formatting   |
+| **Jest**           | Testing framework |
 
 ### Project Structure
 
@@ -305,22 +311,75 @@ docker-compose -f docker-compose.minimal.yml up --build
 
 ## 📦 Production Deployment
 
-### Build Process
+### 🚀 Render + Netlify Deployment (Recommended)
 
-```bash
-# Build frontend for production
-cd client && npm run build
+This application is configured for easy deployment with Render (backend) and Netlify (frontend).
 
-# The application is containerized and ready for deployment
+#### Quick Deploy
+
+1. **Fork/Clone** this repository to your GitHub account
+2. **Set Up Backend**:
+    - Sign up at [render.com](https://render.com)
+    - Create a PostgreSQL database
+    - Deploy a web service from your repository
+3. **Set Up Frontend**:
+    - Sign up at [netlify.com](https://netlify.com)
+    - Import your repository
+    - Configure build settings
+4. **Follow** the detailed setup guide in [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+#### Key Features
+
+-   ✅ **Automatic CI/CD** - Deploy on every push to main
+-   ✅ **Separate Hosting** - Backend on Render, Frontend on Netlify
+-   ✅ **PostgreSQL Database** - Managed database on Render
+-   ✅ **Redis Caching** - Upstash integration
+-   ✅ **SSL Certificates** - Automatic HTTPS
+-   ✅ **Custom Domains** - Add your own domain
+-   ✅ **Monitoring & Logs** - Built-in observability
+-   ✅ **Free Tier** - Get started with no upfront costs
+
+#### Environment Variables
+
+Production environment variables template:
+
+```env
+# Backend Service (Render)
+NODE_ENV=production
+PORT=10000
+BASE_URL=https://your-api.onrender.com
+DATABASE_URL=postgres://user:password@postgres-db:5432/dbname
+UPSTASH_REDIS_REST_URL=your_upstash_url
+UPSTASH_REDIS_REST_TOKEN=your_upstash_token
+
+# Frontend Service (Netlify)
+VITE_API_URL=https://your-api.onrender.com
 ```
 
-### Environment Variables
+### 🐳 Docker Deployment
 
-Ensure these are set in production:
+For self-hosting with Docker:
 
--   `NODE_ENV=production`
--   `DB_CONNECTION_URI=<production-database-url>`
--   `PORT=8000`
+```bash
+# Production build
+docker-compose -f docker-compose.production.yml up --build
+
+# Or build manually
+cd server && docker build -t url-shortener-api .
+cd client && docker build -t url-shortener-web .
+```
+
+### ☁️ Other Platforms
+
+The application can also be deployed to:
+
+-   **Vercel** (frontend) + **Render** (backend)
+-   **GitHub Pages** (frontend) + **Render** (backend)
+-   **Azure App Service**
+-   **AWS ECS/Fargate**
+-   **Google Cloud Run**
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for platform-specific instructions.
 
 ## 🤝 Contributing
 

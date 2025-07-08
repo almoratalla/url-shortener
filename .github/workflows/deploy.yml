@@ -1,0 +1,69 @@
+name: Deploy to Railway
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Use Node.js 18
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 18
+                  cache: "npm"
+                  cache-dependency-path: |
+                      server/package-lock.json
+                      client/package-lock.json
+
+            - name: Install backend dependencies
+              working-directory: ./server
+              run: npm ci
+
+            - name: Install frontend dependencies
+              working-directory: ./client
+              run: npm ci
+
+            - name: Run backend tests
+              working-directory: ./server
+              run: npm test
+              env:
+                  NODE_ENV: test
+
+            - name: Build frontend
+              working-directory: ./client
+              run: npm run build
+
+    deploy:
+        needs: test
+        runs-on: ubuntu-latest
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Use Node.js 18
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 18
+
+            - name: Install Railway CLI
+              run: npm install -g @railway/cli
+
+            - name: Deploy Backend to Railway
+              working-directory: ./server
+              run: railway up --service backend
+              env:
+                  RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+            - name: Deploy Frontend to Railway
+              working-directory: ./client
+              run: railway up --service frontend
+              env:
+                  RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

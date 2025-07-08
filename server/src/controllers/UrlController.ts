@@ -306,9 +306,18 @@ export class UrlController {
                 analyticsData
             );
 
-            console.log("Backend getRedirectInfo - result from UrlService:", result);
-            console.log("Backend getRedirectInfo - result.redirectUrl:", result.redirectUrl);
-            console.log("Backend getRedirectInfo - typeof result.redirectUrl:", typeof result.redirectUrl);
+            console.log(
+                "Backend getRedirectInfo - result from UrlService:",
+                result
+            );
+            console.log(
+                "Backend getRedirectInfo - result.redirectUrl:",
+                result.redirectUrl
+            );
+            console.log(
+                "Backend getRedirectInfo - typeof result.redirectUrl:",
+                typeof result.redirectUrl
+            );
 
             if (result.expired) {
                 res.status(410).json({

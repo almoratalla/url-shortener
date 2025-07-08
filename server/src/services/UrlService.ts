@@ -207,7 +207,10 @@ export class UrlService {
             console.log(`🚀 Cached redirect value:`, cachedRedirect);
 
             // Validate that cached data is a string URL, not an object
-            if (typeof cachedRedirect === 'string' && cachedRedirect.startsWith('http')) {
+            if (
+                typeof cachedRedirect === "string" &&
+                cachedRedirect.startsWith("http")
+            ) {
                 // Still need to track analytics and update click count asynchronously
                 setImmediate(async () => {
                     try {
@@ -227,7 +230,10 @@ export class UrlService {
                                 analyticsData.user_agent ||
                                 analyticsData.referer
                             ) {
-                                await this.trackAnalytics(url.id, analyticsData);
+                                await this.trackAnalytics(
+                                    url.id,
+                                    analyticsData
+                                );
                             }
 
                             // Update URL cache with fresh click count
@@ -248,7 +254,9 @@ export class UrlService {
 
                 return { redirectUrl: cachedRedirect, expired: false };
             } else {
-                console.warn(`🚫 Invalid cached redirect data for ${code}, clearing cache and falling back to DB`);
+                console.warn(
+                    `🚫 Invalid cached redirect data for ${code}, clearing cache and falling back to DB`
+                );
                 console.warn(`🚫 Invalid data:`, cachedRedirect);
                 await redirectCache.delete(code);
                 // Fall through to database lookup

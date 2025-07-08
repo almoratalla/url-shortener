@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+    backend:
+        build:
+            context: ./server
+            dockerfile: Dockerfile
+        environment:
+            - NODE_ENV=production
+            - PORT=8000
+            - DATABASE_URL=${DATABASE_URL}
+            - BASE_URL=${BASE_URL}
+            - UPSTASH_REDIS_REST_URL=${UPSTASH_REDIS_REST_URL}
+            - UPSTASH_REDIS_REST_TOKEN=${UPSTASH_REDIS_REST_TOKEN}
+        ports:
+            - "8000:8000"
+        depends_on:
+            - db
+        restart: unless-stopped
+
+    frontend:
+        build:
+            context: ./client
+            dockerfile: Dockerfile
+        environment:
+            - VITE_API_URL=${VITE_API_URL}
+        ports:
+            - "80:80"
+        depends_on:
+            - backend
+        restart: unless-stopped
+
+    db:
+        image: postgres:15-alpine
+        environment:
+            - POSTGRES_DB=${POSTGRES_DB:-url_shortener}
+            - POSTGRES_USER=${POSTGRES_USER:-postgres}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        ports:
+            - "5432:5432"
+        restart: unless-stopped
+
+volumes:
+    postgres_data:
+        driver: local
