@@ -6,7 +6,32 @@
 [![Docker](https://img.shields.io/badge/Docker-20+-blue.svg)](https://docker.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5+-blue.svg)](https://typescriptlang.org/)
 
-A modern, full-stack URL shortener application built with React, Express.js, and PostgreSQL. This project demonstrates modern web development practices including containerization, type safety, and responsive design.
+A modern, full-stack URL shortener application built with **React + Vite**, **Express.js**, and **PostgreSQL**. Features intelligent caching with Redis, comprehensive analytics, and a beautiful UI built with shadcn/ui components.
+
+## ✨ Features
+
+### 🚀 Core Functionality
+- **URL Shortening**: Generate short, memorable URLs for any link
+- **Custom Slugs**: Create personalized short URLs with custom slugs
+- **Expiration Dates**: Set automatic expiration for temporary links
+- **UTM Parameter Support**: Advanced UTM parameter management for marketing campaigns
+- **Click Tracking**: Real-time analytics and click counting
+
+### 🔥 Advanced Features
+- **Intelligent Multi-Layer Caching**: Redis + in-memory fallback with cache warming
+- **Real-time Analytics**: Comprehensive click tracking and user analytics
+- **Cache Statistics Dashboard**: Monitor cache performance and hit rates
+- **Responsive Design**: Beautiful, modern UI that works on all devices
+- **Toast Notifications**: User-friendly feedback with Sonner toasts
+- **Error Handling**: Robust error handling with meaningful messages
+
+### 🛠 Technical Features
+- **Client-Side Routing**: React Router for seamless navigation
+- **Type Safety**: Full TypeScript implementation
+- **Database Migrations**: Automated schema management with Knex.js
+- **Docker Support**: Complete containerization for easy deployment
+- **Environment Configuration**: Flexible configuration for different environments
+- **Rate Limiting**: Built-in protection against abuse
 
 ## 🚀 Quick Start
 
@@ -42,7 +67,7 @@ A modern, full-stack URL shortener application built with React, Express.js, and
 
     ```bash
     # Start all services with Docker Compose
-    docker-compose -f docker-compose.minimal.yml up --build
+    docker compose -f docker-compose.minimal.yml up --build
     ```
 
 4. **Access the application:**
@@ -50,16 +75,36 @@ A modern, full-stack URL shortener application built with React, Express.js, and
     - 🔗 **Backend API**: http://localhost:8000
     - 🗄️ **Database**: localhost:5433 (PostgreSQL)
 
-## 🏗️ Architecture
+## 🏗️ Architecture & Technology Stack
 
-### Technology Stack
+### Frontend
+| Technology | Purpose | Features |
+|------------|---------|----------|
+| **React 18** | UI Framework | Hooks, Suspense, Error Boundaries |
+| **Vite** | Build Tool | Fast HMR, optimized builds |
+| **TypeScript** | Type Safety | Full type coverage, better DX |
+| **Tailwind CSS** | Styling | Utility-first, responsive design |
+| **shadcn/ui** | UI Components | Beautiful, accessible components |
+| **React Router** | Routing | Client-side navigation |
+| **Sonner** | Notifications | Toast notifications |
 
-| Component        | Technology                           | Purpose                        |
-| ---------------- | ------------------------------------ | ------------------------------ |
-| **Frontend**     | React 18 + TypeScript + Tailwind CSS | User interface and interaction |
-| **Backend**      | Express.js + TypeScript + Knex.js    | RESTful API and business logic |
-| **Database**     | PostgreSQL 16                        | Data persistence               |
-| **Build System** | Vite (Frontend) + Docker             | Development and deployment     |
+### Backend
+| Technology | Purpose | Features |
+|------------|---------|----------|
+| **Express.js** | Web Framework | RESTful APIs, middleware |
+| **TypeScript** | Type Safety | Type-safe server development |
+| **Knex.js** | Query Builder | SQL query builder, migrations |
+| **PostgreSQL 16** | Database | Reliable data persistence |
+| **Redis** | Caching | Multi-layer intelligent caching |
+| **Docker** | Containerization | Easy deployment and scaling |
+
+### DevOps & Tools
+| Technology | Purpose |
+|------------|---------|
+| **Docker Compose** | Local development |
+| **ESLint** | Code linting |
+| **Prettier** | Code formatting |
+| **Jest** | Testing framework |
 
 ### Project Structure
 

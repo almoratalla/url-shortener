@@ -11,6 +11,7 @@ import {
     urlCache,
     analyticsCache,
     redirectCache,
+    optimizeCache,
 } from "./services/CacheService";
 import { db } from "./db/knex";
 
@@ -86,11 +87,15 @@ async function startServer() {
 
         // Start cache cleanup process
         startCacheCleanup();
-        console.log("✅ Cache cleanup process started");
+        console.log("✅ Cache cleanup and optimization started");
 
         // Warm up cache with popular URLs
         await warmUrlCache(db);
         console.log("✅ Cache warmed up successfully");
+
+        // Start cache optimization
+        optimizeCache();
+        console.log("✅ Cache optimization started");
 
         app.listen(PORT, () => {
             console.log(`✅ Server has started on port ${PORT}`);

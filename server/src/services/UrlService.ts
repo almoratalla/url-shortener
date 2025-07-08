@@ -103,6 +103,9 @@ export class UrlService {
         const [createdUrl] = await db("urls").insert(urlData).returning("*");
 
         // Cache the new URL (async, but don't wait)
+        console.log(
+            `📝 Caching new URL: shortCode=${createdUrl.short_code}, customSlug=${createdUrl.custom_slug}`
+        );
         urlCache.set(createdUrl.short_code, createdUrl).catch(console.error);
         if (createdUrl.custom_slug) {
             urlCache
@@ -194,37 +197,82 @@ export class UrlService {
             referer?: string;
         }
     ): Promise<{ redirectUrl: string; expired: boolean }> {
-        // Check redirect cache first for performance
+        // Multi-layer caching strategy
+
+        // 1. Check redirect cache first (fastest)
         const cachedRedirect = await redirectCache.get(code);
         if (cachedRedirect) {
-            // Still need to track analytics and update click count
-            const url = await this.getUrlByCode(code);
-            if (url) {
-                // Update click count and last accessed (async, don't wait)
-                db("urls")
-                    .where("id", url.id)
-                    .update({
-                        click_count: db.raw("click_count + 1"),
-                        last_accessed: new Date(),
-                    })
-                    .catch(console.error);
+            console.log(`🚀 Cache HIT for redirect: ${code}`);
+            console.log(`🚀 Cached redirect type: ${typeof cachedRedirect}`);
+            console.log(`🚀 Cached redirect value:`, cachedRedirect);
 
-                // Track analytics (async, don't wait)
-                if (
-                    analyticsData.ip_address ||
-                    analyticsData.user_agent ||
-                    analyticsData.referer
-                ) {
-                    this.trackAnalytics(url.id, analyticsData).catch(
-                        console.error
-                    );
-                }
+            // Validate that cached data is a string URL, not an object
+            if (typeof cachedRedirect === 'string' && cachedRedirect.startsWith('http')) {
+                // Still need to track analytics and update click count asynchronously
+                setImmediate(async () => {
+                    try {
+                        const url = await this.getUrlByCode(code);
+                        if (url) {
+                            // Update click count and last accessed (async, don't wait)
+                            await db("urls")
+                                .where("id", url.id)
+                                .update({
+                                    click_count: db.raw("click_count + 1"),
+                                    last_accessed: new Date(),
+                                });
+
+                            // Track analytics (async, don't wait)
+                            if (
+                                analyticsData.ip_address ||
+                                analyticsData.user_agent ||
+                                analyticsData.referer
+                            ) {
+                                await this.trackAnalytics(url.id, analyticsData);
+                            }
+
+                            // Update URL cache with fresh click count
+                            const updatedUrl = {
+                                ...url,
+                                click_count: (url.click_count || 0) + 1,
+                                last_accessed: new Date(),
+                            };
+                            await urlCache.set(code, updatedUrl);
+                        }
+                    } catch (error) {
+                        console.error(
+                            "Error updating analytics for cached redirect:",
+                            error
+                        );
+                    }
+                });
+
+                return { redirectUrl: cachedRedirect, expired: false };
+            } else {
+                console.warn(`🚫 Invalid cached redirect data for ${code}, clearing cache and falling back to DB`);
+                console.warn(`🚫 Invalid data:`, cachedRedirect);
+                await redirectCache.delete(code);
+                // Fall through to database lookup
             }
-
-            return { redirectUrl: cachedRedirect, expired: false };
         }
 
-        const url = await this.getUrlByCode(code);
+        console.log(
+            `💾 Cache MISS for redirect: ${code}, fetching from database`
+        );
+
+        // 2. Check URL cache before hitting database
+        let url = await urlCache.get(code);
+        if (!url) {
+            // 3. Fallback to database
+            url = await this.getUrlByCodeFromDB(code);
+            if (url) {
+                // Cache the URL for future requests
+                await urlCache.set(code, url);
+                // Also cache by custom slug if it exists
+                if (url.custom_slug && url.custom_slug !== code) {
+                    await urlCache.set(url.custom_slug, url);
+                }
+            }
+        }
 
         if (!url) {
             throw new Error("URL not found");
@@ -252,8 +300,12 @@ export class UrlService {
             redirectUrl = buildUtmUrl(url.original_url, utmParams);
         }
 
-        // Cache the redirect URL for future requests
-        redirectCache.set(code, redirectUrl).catch(console.error);
+        // Cache the redirect URL for future requests with longer TTL for popular URLs
+        const cacheTime = url.click_count && url.click_count > 10 ? 120 : 60; // 2 hours for popular, 1 hour for others
+        console.log(
+            `🔀 Caching redirect URL: code=${code}, redirectUrl=${redirectUrl}`
+        );
+        await redirectCache.set(code, redirectUrl);
 
         // Update click count and last accessed
         await db("urls")
@@ -275,7 +327,30 @@ export class UrlService {
             await this.trackAnalytics(url.id, analyticsData);
         }
 
+        // Update URL cache with fresh click count
+        const updatedUrl = {
+            ...url,
+            click_count: (url.click_count || 0) + 1,
+            last_accessed: new Date(),
+        };
+        await urlCache.set(code, updatedUrl);
+
         return { redirectUrl, expired: false };
+    }
+
+    /**
+     * Get URL by code from database (bypassing cache)
+     */
+    private static async getUrlByCodeFromDB(
+        code: string
+    ): Promise<CachedUrl | null> {
+        const url = await db("urls")
+            .where(function () {
+                this.where("short_code", code).orWhere("custom_slug", code);
+            })
+            .first();
+
+        return url || null;
     }
 
     /**

@@ -33,22 +33,41 @@ export class UrlController {
 
             const url = await UrlService.createShortUrl(params);
 
-            // Build the full short URL
+            // Build the full short URL (frontend URL)
             const baseUrl = process.env.BASE_URL || "http://localhost:3000";
             const shortUrl = `${baseUrl}/${url.custom_slug || url.short_code}`;
 
+            console.log("Backend - createShortUrl url object:", url);
+            console.log(
+                "Backend - url.short_code:",
+                url.short_code,
+                typeof url.short_code
+            );
+            console.log(
+                "Backend - url.custom_slug:",
+                url.custom_slug,
+                typeof url.custom_slug
+            );
+
+            const responseData = {
+                id: url.id,
+                originalUrl: url.original_url,
+                shortUrl,
+                shortCode: url.short_code,
+                customSlug: url.custom_slug,
+                expirationDate: url.expiration_date,
+                clickCount: url.click_count,
+                createdAt: url.created_at,
+            };
+
+            console.log(
+                "Backend - createShortUrl response data:",
+                responseData
+            );
+
             res.status(201).json({
                 success: true,
-                data: {
-                    id: url.id,
-                    originalUrl: url.original_url,
-                    shortUrl,
-                    shortCode: url.short_code,
-                    customSlug: url.custom_slug,
-                    expirationDate: url.expiration_date,
-                    clickCount: url.click_count,
-                    createdAt: url.created_at,
-                },
+                data: responseData,
             });
         } catch (error) {
             console.error("Error creating short URL:", error);
@@ -229,17 +248,164 @@ export class UrlController {
     }
 
     /**
-     * GET /:shortCode
-     * Handles URL redirection
+     * GET /api/redirect/:shortCode
+     * Gets redirect information for frontend handling
      */
-    static async redirectUrl(req: Request, res: Response): Promise<void> {
+    static async getRedirectInfo(req: Request, res: Response): Promise<void> {
         try {
-            const { shortCode } = req.params;
+            let { shortCode } = req.params;
+
+            console.log(
+                "Backend - getRedirectInfo called with shortCode:",
+                shortCode
+            );
+            console.log("Backend - typeof shortCode:", typeof shortCode);
+            console.log("Backend - req.params:", req.params);
+            console.log("Backend - req.url:", req.url);
+
+            // URL decode the shortCode to handle encoding issues
+            if (shortCode) {
+                try {
+                    shortCode = decodeURIComponent(shortCode);
+                    console.log("Backend - decoded shortCode:", shortCode);
+                } catch (decodeError) {
+                    console.error(
+                        "Backend - Failed to decode shortCode:",
+                        decodeError
+                    );
+                }
+            }
+
+            // Check for the [object Object] bug
+            if (shortCode === "[object Object]") {
+                console.error(
+                    "Backend - Detected [object Object] as shortCode!"
+                );
+                res.status(400).json({
+                    error: "Invalid short code format - received [object Object]",
+                });
+                return;
+            }
 
             if (!shortCode) {
                 res.status(400).json({
                     error: "Short code is required",
                 });
+                return;
+            }
+
+            // Gather analytics data
+            const analyticsData = {
+                ip_address: req.ip || req.connection.remoteAddress,
+                user_agent: req.get("User-Agent"),
+                referer: req.get("Referer"),
+            };
+
+            const result = await UrlService.handleRedirect(
+                shortCode,
+                analyticsData
+            );
+
+            console.log("Backend getRedirectInfo - result from UrlService:", result);
+            console.log("Backend getRedirectInfo - result.redirectUrl:", result.redirectUrl);
+            console.log("Backend getRedirectInfo - typeof result.redirectUrl:", typeof result.redirectUrl);
+
+            if (result.expired) {
+                res.status(410).json({
+                    error: "This shortened URL has expired",
+                });
+                return;
+            }
+
+            // Return the redirect URL as JSON for frontend handling
+            res.json({
+                success: true,
+                data: {
+                    redirectUrl: result.redirectUrl,
+                    shortCode: shortCode,
+                },
+            });
+        } catch (error) {
+            console.error("Error getting redirect info:", error);
+
+            if (error instanceof Error && error.message === "URL not found") {
+                res.status(404).json({
+                    error: "Shortened URL not found",
+                });
+            } else {
+                res.status(500).json({
+                    error: "Failed to get redirect information",
+                });
+            }
+        }
+    }
+
+    /**
+     * GET /:shortCode
+     * Handles URL redirection
+     */
+    static async redirectUrl(req: Request, res: Response): Promise<void> {
+        try {
+            let { shortCode } = req.params;
+
+            console.log(
+                "Backend redirectUrl - Original shortCode:",
+                shortCode,
+                typeof shortCode
+            );
+            console.log("Backend redirectUrl - req.params:", req.params);
+            console.log("Backend redirectUrl - req.url:", req.url);
+            console.log(
+                "Backend redirectUrl - req.headers.host:",
+                req.get("host")
+            );
+
+            // URL decode the shortCode to handle encoding issues
+            if (shortCode) {
+                try {
+                    shortCode = decodeURIComponent(shortCode);
+                    console.log(
+                        "Backend redirectUrl - decoded shortCode:",
+                        shortCode
+                    );
+                } catch (decodeError) {
+                    console.error(
+                        "Backend redirectUrl - Failed to decode shortCode:",
+                        decodeError
+                    );
+                }
+            }
+
+            // Check for the [object Object] bug
+            if (shortCode === "[object Object]") {
+                console.error(
+                    "Backend redirectUrl - Detected [object Object] as shortCode!"
+                );
+                res.status(400).send(`
+                    <html>
+                        <head><title>Invalid URL</title></head>
+                        <body>
+                            <h1>Invalid Short URL</h1>
+                            <p>The URL contains an invalid short code: [object Object]</p>
+                            <p>This indicates a bug in the application. Please contact support.</p>
+                            <a href="http://localhost:3000">← Go to URL Shortener</a>
+                        </body>
+                    </html>
+                `);
+                return;
+            }
+
+            if (!shortCode) {
+                res.status(400).send(`
+                    <html>
+                        <head><title>Missing Short Code</title></head>
+                        <body>
+                            <h1>Missing Short Code</h1>
+                            <p>No short code was provided in the URL.</p>
+                            <a href="http://localhost:3000">← Go to URL Shortener</a>
+                        </body>
+                    </html>
+                `);
                 return;
             }
 

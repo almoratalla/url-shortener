@@ -5,6 +5,8 @@
  */
 
 import { Redis } from "@upstash/redis";
+import { db } from "../db/knex";
+import { buildUtmUrl } from "../utils/urlGenerator";
 
 interface CacheEntry<T> {
     value: T;
@@ -41,35 +43,51 @@ export class CacheService<T> {
     constructor(maxSize: number = 1000, ttlMinutes: number = 30) {
         this.maxSize = maxSize;
         this.ttl = ttlMinutes * 60 * 1000; // Convert to milliseconds
-        this.initializeRedis();
+        this.initializeRedis(); // Start async initialization
     }
 
     /**
      * Initialize Redis connection
      */
-    private async initializeRedis(): Promise<void> {
-        try {
-            const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
-            const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+    private initializeRedis(): void {
+        const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+        const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-            if (!redisUrl || !redisToken) {
-                console.warn(
-                    "⚠️ Upstash Redis credentials not found. Using in-memory cache only."
-                );
-                this.stats.fallbackActive = true;
+        if (!redisUrl || !redisToken) {
+            console.warn(
+                "⚠️ Upstash Redis credentials not found. Using in-memory cache only."
+            );
+            this.stats.fallbackActive = true;
+            return;
+        }
+
+        this.redis = new Redis({
+            url: redisUrl,
+            token: redisToken,
+        });
+
+        // Test Redis connection asynchronously
+        this.testRedisConnection();
+    }
+
+    /**
+     * Test Redis connection and set flags
+     */
+    private async testRedisConnection(): Promise<void> {
+        try {
+            if (!this.redis) {
+                console.log("⚠️ Redis client not initialized");
                 return;
             }
 
-            this.redis = new Redis({
-                url: redisUrl,
-                token: redisToken,
-            });
-
-            // Test Redis connection
+            console.log("🔌 Testing Redis connection...");
+            const startTime = Date.now();
             await this.redis.ping();
+            const duration = Date.now() - startTime;
+
             this.redisConnected = true;
             this.stats.redisConnected = true;
-            console.log("✅ Connected to Upstash Redis");
+            console.log(`✅ Connected to Upstash Redis (${duration}ms)`);
         } catch (error) {
             console.error("❌ Failed to connect to Upstash Redis:", error);
             this.redis = null;
@@ -147,22 +165,34 @@ export class CacheService<T> {
      * Set value in cache (Redis first, then fallback)
      */
     async set(key: string, value: T): Promise<void> {
+        console.log(
+            `🔍 CacheService.set called: key=${key}, redisConnected=${this.redisConnected}`
+        );
+
         // Try Redis first
         if (this.redisConnected && this.redis) {
             try {
                 const ttlSeconds = Math.floor(this.ttl / 1000);
+                console.log(
+                    `✏️ Writing to Redis: key=${key}, ttl=${ttlSeconds}s`
+                );
                 await this.redis.setex(key, ttlSeconds, JSON.stringify(value));
+                console.log(`✅ Redis write successful: key=${key}`);
 
                 // Also store in memory for faster access
                 this.setInMemory(key, value);
                 return;
             } catch (error) {
                 console.error(
-                    "❌ Redis set failed, falling back to in-memory:",
+                    `❌ Redis set failed for key=${key}, falling back to in-memory:`,
                     error
                 );
                 this.handleRedisError();
             }
+        } else {
+            console.log(
+                `⚠️ Redis not connected, using in-memory cache for key=${key}`
+            );
         }
 
         // Fallback to in-memory cache
@@ -196,7 +226,8 @@ export class CacheService<T> {
 
         // Attempt to reconnect after a delay
         setTimeout(() => {
-            this.initializeRedis();
+            console.log("🔄 Attempting to reconnect to Redis...");
+            this.testRedisConnection();
         }, 30000); // Retry after 30 seconds
     }
 
@@ -513,4 +544,177 @@ export function startCacheCleanup(): void {
             );
         }
     }, cleanupInterval);
+
+    // Start intelligent cache warming
+    startIntelligentCacheWarming();
+}
+
+/**
+ * Intelligent cache warming based on usage patterns
+ */
+async function startIntelligentCacheWarming(): Promise<void> {
+    const warmupInterval = 10 * 60 * 1000; // 10 minutes
+
+    const performCacheWarming = async () => {
+        try {
+            console.log("🔥 Starting intelligent cache warming...");
+
+            // Get most frequently accessed URLs from the last 24 hours
+            const popularUrls = await db("urls")
+                .select(
+                    "short_code",
+                    "custom_slug",
+                    "original_url",
+                    "click_count",
+                    "utm_source",
+                    "utm_medium",
+                    "utm_campaign",
+                    "utm_term",
+                    "utm_content"
+                )
+                .where(
+                    "last_accessed",
+                    ">=",
+                    new Date(Date.now() - 24 * 60 * 60 * 1000)
+                )
+                .orderBy("click_count", "desc")
+                .limit(100);
+
+            let warmedCount = 0;
+
+            for (const url of popularUrls) {
+                const code = url.custom_slug || url.short_code;
+
+                // Check if already cached
+                const cached = await redirectCache.get(code);
+                if (!cached) {
+                    // Build and cache the redirect URL
+                    let redirectUrl = url.original_url;
+
+                    const utmParams = {
+                        utm_source: url.utm_source,
+                        utm_medium: url.utm_medium,
+                        utm_campaign: url.utm_campaign,
+                        utm_term: url.utm_term,
+                        utm_content: url.utm_content,
+                    };
+
+                    const hasUtmParams = Object.values(utmParams).some(
+                        (value) => value
+                    );
+                    if (hasUtmParams) {
+                        redirectUrl = buildUtmUrl(url.original_url, utmParams);
+                    }
+
+                    await redirectCache.set(code, redirectUrl);
+                    await urlCache.set(code, url);
+                    warmedCount++;
+                }
+            }
+
+            if (warmedCount > 0) {
+                console.log(
+                    `🔥 Cache warming completed: warmed ${warmedCount} popular URLs`
+                );
+            }
+        } catch (error) {
+            console.error("❌ Cache warming failed:", error);
+        }
+    };
+
+    // Initial warming
+    setTimeout(performCacheWarming, 5000); // Start after 5 seconds
+
+    // Periodic warming
+    setInterval(performCacheWarming, warmupInterval);
+}
+
+/**
+ * Enhanced cache preloader for specific URL patterns
+ */
+export async function preloadFrequentUrls(): Promise<void> {
+    try {
+        // Get URLs accessed more than 5 times in the last hour
+        const frequentUrls = await db("urls")
+            .select(
+                "short_code",
+                "custom_slug",
+                "original_url",
+                "utm_source",
+                "utm_medium",
+                "utm_campaign",
+                "utm_term",
+                "utm_content"
+            )
+            .where("last_accessed", ">=", new Date(Date.now() - 60 * 60 * 1000))
+            .where("click_count", ">=", 5);
+
+        for (const url of frequentUrls) {
+            const code = url.custom_slug || url.short_code;
+
+            // Build and preload redirect URL
+            let redirectUrl = url.original_url;
+
+            const utmParams = {
+                utm_source: url.utm_source,
+                utm_medium: url.utm_medium,
+                utm_campaign: url.utm_campaign,
+                utm_term: url.utm_term,
+                utm_content: url.utm_content,
+            };
+
+            const hasUtmParams = Object.values(utmParams).some(
+                (value) => value
+            );
+            if (hasUtmParams) {
+                redirectUrl = buildUtmUrl(url.original_url, utmParams);
+            }
+
+            await redirectCache.set(code, redirectUrl);
+            await urlCache.set(code, url);
+        }
+
+        console.log(
+            `⚡ Preloaded ${frequentUrls.length} frequent URLs into cache`
+        );
+    } catch (error) {
+        console.error("❌ URL preloading failed:", error);
+    }
+}
+
+/**
+ * Cache optimization based on usage patterns
+ */
+export function optimizeCache(): void {
+    setInterval(async () => {
+        try {
+            // Get cache stats
+            const redirectStats = redirectCache.getStats();
+            const urlStats = urlCache.getStats();
+
+            // If hit rate is low, trigger cache warming
+            if (
+                redirectStats.hitRate < 70 &&
+                redirectStats.totalRequests > 100
+            ) {
+                console.log(
+                    `📊 Low cache hit rate detected: ${redirectStats.hitRate.toFixed(
+                        2
+                    )}%, triggering cache optimization`
+                );
+                await preloadFrequentUrls();
+            }
+
+            // Log optimization metrics
+            if (redirectStats.totalRequests > 0) {
+                console.log(
+                    `📈 Cache Performance: Redirect cache hit rate: ${redirectStats.hitRate.toFixed(
+                        2
+                    )}% (${redirectStats.hits}/${redirectStats.totalRequests})`
+                );
+            }
+        } catch (error) {
+            console.error("❌ Cache optimization failed:", error);
+        }
+    }, 15 * 60 * 1000); // Every 15 minutes
 }
